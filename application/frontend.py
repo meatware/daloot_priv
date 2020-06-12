@@ -47,7 +47,7 @@ class Window(object):
     def __init__(self, window):
         self.window = window
         self.checkForDatabase()
-        self.window.wm_title("Loot Editor v0.98.5")
+        self.window.wm_title("Loot Editor v0.98.6")
         self.window.wm_iconbitmap(dataPath + "\\miniLogo.ico")
         self.window.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -399,7 +399,7 @@ class Window(object):
 
         Label(filter, text="Type").grid(row=1, column=0, sticky="w")
         Label(filter, text="Subtype").grid(row=2, column=0, sticky="w")
-        # Label(filter, text="Trader").grid(row=3, column=0, sticky="w")
+        Label(filter, text="Trader").grid(row=3, column=0, sticky="w")
 
         self.typeSel = StringVar(window)
         self.typeSel.set("gun")
@@ -413,8 +413,19 @@ class Window(object):
         )
         self.subtypeSel.grid(row=2, column=1, sticky="w", pady=5, padx=5)
 
+        #########################################################
+        #  using dropdown method - need to fix self.choices
+        self.traderSel = IntVar(window)
+        self.traderSel.set(0)
+        trader_choices = dao.getTraderLocs()
+        print("DEBUG trader_choices:", trader_choices, type(trader_choices))
+        OptionMenu(filter, self.traderSel, *trader_choices).grid(
+            row=3, column=1, sticky="w", padx=5
+        )        
+        #########################################################
+
         buttons = Frame(filter)
-        buttons.grid(row=3, columnspan=2)
+        buttons.grid(row=4, columnspan=2)
 
         Button(buttons, text="Filter", width=12, command=self.viewCategroy).grid(pady=5)
         Button(
@@ -525,11 +536,19 @@ class Window(object):
     def viewCategroy(self):
         cat = self.typeSel.get()
         subtype = self.subtypeSel.get() if self.subtypeSel.get() != "" else None
+
+        trader_get = self.traderSel.get()
+        trader = trader_get if trader_get != 0 else None
+
+        print("DEBUG cat:", cat)
+        print("DEBUG subtype:", subtype)
+        print("DEBUG trader:", trader)
         try:
             if cat in categories.categories:
-                rows = dao.getCategory(cat, subtype)
+                rows = dao.getCategory(cat, subtype, trader)
             elif cat in itemTypes:
-                rows = dao.getType(cat, subtype)
+                rows = dao.getType(cat, subtype, trader)
+                print("DEBUG rows:", rows)
             else:
                 rows = dao.getAllItems(subtype)
         except Exception:
@@ -558,6 +577,7 @@ class Window(object):
             self.tierListBox: "tier",
             self.subtypeAutoComp: "subtype",
             self.modEntry: "mod",
+            self.traderEntry: "trader",
             self.deLootOption: "deloot",
             self.cargoOption: "cargo",
             self.hoarderOption: "hoarder",
@@ -588,6 +608,7 @@ class Window(object):
     def updateSel(self, multiplier=None):
         for element in self.tree.selection():
             val = self.getEditedValues(element)
+            print("DEBUG: val", val)
             val["name"] = self.tree.item(element)["text"]
             if multiplier is not None:
                 val["nominal"] = val["nominal"] * multiplier
@@ -702,6 +723,8 @@ class Window(object):
     def fillEntryBoxes(self, event):
         try:
             dict = self.getSelectedValues(self.tree.focus())
+
+            print("DEBUG2 GSV:", dict)
             self.nameEntry.delete(0, END)
             self.nameEntry.insert(END, dict["name"])
 
@@ -728,6 +751,8 @@ class Window(object):
             self.raritySel.set(dict["rarity"])
             self.mod_text.set(dict["mod"])
 
+            self.trader_text.set(dict["trader"])
+
             self.deLoot.set(dict["deloot"])
             self.cargo.set(dict["cargo"])
             self.hoarder.set(dict["hoarder"])
@@ -742,7 +767,12 @@ class Window(object):
 
     def getSelectedValues(self, element):
         dict = self.tree.item(element)
+        print("dict", dict)
         flags = dao.getFlags(dict["text"])
+
+        print("DEBUG GSV flags", flags)
+
+        print("DEBUG GSV dict", dict)
 
         val = {
             "name": dict["text"],
@@ -755,6 +785,7 @@ class Window(object):
             "subtype": dict["values"][5],
             "rarity": dict["values"][9],
             "mod": dict["values"][10],
+            "trader": dict["values"][11],
             "cargo": flags[0],
             "hoarder": flags[1],
             "map": flags[2],
@@ -769,6 +800,9 @@ class Window(object):
         selected.pop("rarity")
         selected.pop("type")
 
+        print("DEBUG - selected;", selected)
+        
+
         val = {
             "nominal": self.nominal_text.get(),
             "min": self.min_text.get(),
@@ -776,6 +810,7 @@ class Window(object):
             "restock": self.restock_text.get(),
             "lifetime": self.lifetime_text.get(),
             "mod": self.mod_text.get(),
+            "trader": self.trader_text.get(),
             "usage": self.getEditedListBox(self.usageListBox, categories.usages),
             "tier": self.getEditedListBox(self.tierListBox, categories.tiers),
             "cargo": self.cargo.get(),
@@ -784,9 +819,13 @@ class Window(object):
             "map": self.map.get(),
             "player": self.player.get(),
         }
-
+      
         for field in self.activatedFields:
+            print("DEBUG - field:", field)
+            print("DEBUG - sel-field:", selected[field])
+            print("DEBUG - val-field:", val[field])
             selected[field] = val[field]
+
 
         return selected
 
@@ -810,6 +849,8 @@ class Window(object):
         self.clearTree()
         for row in rows:
             row = self.dictFromRow(row)
+            # print("DEBUG row:", row)
+            # print("DEBUG row-len:", len(row))            
             if row["mod"] in self.selectedMods:
                 displayedNom += row["nominal"]
                 self.tree.insert(
@@ -828,6 +869,7 @@ class Window(object):
                         row["deloot"],
                         row["rarity"],
                         row["mod"],
+                        row["traderLoc"],
                     ),
                 )
         self.updateNominalInfo()
@@ -855,6 +897,7 @@ class Window(object):
             "sellprice": row[40],
             "tradercat": row[41],
             "traderExcl": row[42],
+            "traderLoc": row[43],
         }
 
     def createUsage(self, row):
@@ -972,9 +1015,11 @@ class Window(object):
 
     def checkForDatabase(self):
         try:
+            print("doing db check")
             dao.getNominalByType("weapon")
             self.connectionOK = True
         except Exception:
+            print("No DB currently Available")
             self.window.withdraw()
             self.openConnectionWindow()
             self.window.deiconify()
