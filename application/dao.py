@@ -182,21 +182,14 @@ def getItemsToZero(names, itemType):
     return cursor.fetchall()
 
 
-def getType(type, subtype=None, trader=None):
-    print("DEBUG trader:", trader)
+def getType(type, subtype=None):
     global lastQuery
     lastQuery = f"select * from items where type = '{type}'"
 
     if subtype is not None:
         lastQuery += f" and subtype = '{subtype}'"
 
-    if trader is not None:
-        print("DEBUG - IN IT")
-        lastQuery += f" and trader_loc = '{trader}'"   
-
     lastQuery += f";"     
-
-    print("DEBUG: getType lastQuery:", lastQuery)
 
     cursor = connection().cursor()
     cursor.execute(lastQuery)
@@ -208,20 +201,21 @@ def getSubtypes():
     cursor.execute("SELECT subtype FROM items group by subtype")
     return [row[0] if row[0] is not None else "" for row in cursor.fetchall()]
 
+#!##############################################
 def getTraderLocs():
     cursor = connection().cursor()
     cursor.execute("SELECT trader_loc FROM items group by trader_loc")
     raw_results = cursor.fetchall()
     results = [row[0] if row[0] is not None else "" for row in raw_results]
-    print("DEBUG results:", results)
     return sorted(results)
+#!##############################################
 
 def getSubtypesMods(mod):
     cursor = connection().cursor()
     cursor.execute("SELECT subtype, mods FROM items WHERE mods = ? group by subtype", mod)
     return [_[0] for _ in cursor.fetchall()]
 
-def getCategory(category, subtype=None, trader=None):
+def getCategory(category, subtype=None):
     global lastQuery
 
     lastQuery = f"select * from items where type = '{category}'"
@@ -229,13 +223,7 @@ def getCategory(category, subtype=None, trader=None):
     if subtype is not None:
         lastQuery += f" and subtype = '{subtype}'"
 
-    if trader is not None:
-        print("DEBUG - IN IT")
-        lastQuery += f" and trader_loc = '{trader}'"   
-
     lastQuery += f";"        
-
-    print("DEBUG: getCategory lastQuery:", lastQuery)  
 
     cursor = connection().cursor()
     cursor.execute(lastQuery)
@@ -257,9 +245,14 @@ def getSubtypeForTrader(subtype):
             result[i][4] = -1
 
         result[i] = list(result[i])
-
     return result
 
+def getItemDetailsByTraderLoc(subtype, trader_loc):
+    query = f'SELECT name FROM llama2.items where trader_loc = {trader_loc} and subtype = "{subtype}"'
+    cursor = connection().cursor()
+    cursor.execute(query)
+    results = cursor.fetchall()    
+    return [row[0] for row in results]
 
 def getItemsByName(items):
     conn = connection()
@@ -456,10 +449,7 @@ def update(values):
         values["subtype"]) + "'" \
             + ", deloot= '" + str(values["deloot"]) + "', mods= '" + str(values["mod"]) + "',"  "trader_loc = " + str(values["trader"]) + " WHERE name = '" + str(
         values["name"] + "'" )
-
-    print("DEBUG query", query)
-     
-
+   
     conn = connection()
     cursor = conn.cursor()
     cursor.execute(query)

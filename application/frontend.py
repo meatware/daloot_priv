@@ -399,7 +399,6 @@ class Window(object):
 
         Label(filter, text="Type").grid(row=1, column=0, sticky="w")
         Label(filter, text="Subtype").grid(row=2, column=0, sticky="w")
-        Label(filter, text="Trader").grid(row=3, column=0, sticky="w")
 
         self.typeSel = StringVar(window)
         self.typeSel.set("gun")
@@ -412,17 +411,6 @@ class Window(object):
             filter, dao.getSubtypes(), highlightthickness=1, width=15
         )
         self.subtypeSel.grid(row=2, column=1, sticky="w", pady=5, padx=5)
-
-        #########################################################
-        #  using dropdown method - need to fix self.choices
-        self.traderSel = IntVar(window)
-        self.traderSel.set(0)
-        trader_choices = dao.getTraderLocs()
-        print("DEBUG trader_choices:", trader_choices, type(trader_choices))
-        OptionMenu(filter, self.traderSel, *trader_choices).grid(
-            row=3, column=1, sticky="w", padx=5
-        )        
-        #########################################################
 
         buttons = Frame(filter)
         buttons.grid(row=4, columnspan=2)
@@ -537,18 +525,11 @@ class Window(object):
         cat = self.typeSel.get()
         subtype = self.subtypeSel.get() if self.subtypeSel.get() != "" else None
 
-        trader_get = self.traderSel.get()
-        trader = trader_get if trader_get != 0 else None
-
-        print("DEBUG cat:", cat)
-        print("DEBUG subtype:", subtype)
-        print("DEBUG trader:", trader)
         try:
             if cat in categories.categories:
-                rows = dao.getCategory(cat, subtype, trader)
+                rows = dao.getCategory(cat, subtype)
             elif cat in itemTypes:
-                rows = dao.getType(cat, subtype, trader)
-                print("DEBUG rows:", rows)
+                rows = dao.getType(cat, subtype)
             else:
                 rows = dao.getAllItems(subtype)
         except Exception:
@@ -608,7 +589,6 @@ class Window(object):
     def updateSel(self, multiplier=None):
         for element in self.tree.selection():
             val = self.getEditedValues(element)
-            print("DEBUG: val", val)
             val["name"] = self.tree.item(element)["text"]
             if multiplier is not None:
                 val["nominal"] = val["nominal"] * multiplier
@@ -724,7 +704,6 @@ class Window(object):
         try:
             dict = self.getSelectedValues(self.tree.focus())
 
-            print("DEBUG2 GSV:", dict)
             self.nameEntry.delete(0, END)
             self.nameEntry.insert(END, dict["name"])
 
@@ -770,10 +749,6 @@ class Window(object):
         print("dict", dict)
         flags = dao.getFlags(dict["text"])
 
-        print("DEBUG GSV flags", flags)
-
-        print("DEBUG GSV dict", dict)
-
         val = {
             "name": dict["text"],
             "nominal": dict["values"][0],
@@ -798,10 +773,7 @@ class Window(object):
     def getEditedValues(self, element):
         selected = self.getSelectedValues(element)
         selected.pop("rarity")
-        selected.pop("type")
-
-        print("DEBUG - selected;", selected)
-        
+        selected.pop("type")       
 
         val = {
             "nominal": self.nominal_text.get(),
@@ -821,9 +793,6 @@ class Window(object):
         }
       
         for field in self.activatedFields:
-            print("DEBUG - field:", field)
-            print("DEBUG - sel-field:", selected[field])
-            print("DEBUG - val-field:", val[field])
             selected[field] = val[field]
 
 
@@ -848,9 +817,7 @@ class Window(object):
         displayedNom = 0
         self.clearTree()
         for row in rows:
-            row = self.dictFromRow(row)
-            # print("DEBUG row:", row)
-            # print("DEBUG row-len:", len(row))            
+            row = self.dictFromRow(row)           
             if row["mod"] in self.selectedMods:
                 displayedNom += row["nominal"]
                 self.tree.insert(
