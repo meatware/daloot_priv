@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import _setit
 
 import dao
 import windows
@@ -55,17 +56,14 @@ class TraderEditor(object):
         #
         self.traderSel = IntVar(traderLocFrame)
         self.traderSel.set(0)
-        trader_choices = dao.getTraderLocs()
+        trader_choices = [0] #dao.getTraderLocs()
         print("DEBUG trader_choices:", trader_choices, type(trader_choices))
-        OptionMenu(traderLocFrame, self.traderSel, *trader_choices).grid(row=0, column=0, sticky="w", padx=100)
-        #self.traderSel.trace_add('write', lambda *args: self.trader_loc_callback)
-
+        self.traderloc_menu = OptionMenu(traderLocFrame, self.traderSel, *trader_choices)
+        self.traderloc_menu.grid(row=0, column=0, sticky="w", padx=100)
         self.traderSel.trace("w", self.trader_loc_callback)
-        #print("DEBUG: self.traderSel get create", self.trader_loc_callback)
         #######################################            
 
     def createTraderEditor(self, root, row, column, rows):
-        print("DEBUG - in createTraderEditor")
         self.drawEditor(root, row, column, self.setTraderCat(rows))
 
     def setTraderCat(self, rows):
@@ -213,12 +211,27 @@ class TraderEditor(object):
 
         self.traderVal = []
 
+    def refresh_tradersel(self, new_locs):
+        # Reset var and delete all old options
+        current_tradersel = self.traderSel.get()
+        self.traderloc_menu['menu'].delete(0, 'end')
+        # Insert list of new options (tk._setit hooks them up to var)
+        #new_locs = (1, 2 , 3)
+        for choice in new_locs:
+            self.traderloc_menu['menu'].add_command(label=choice, command=_setit(self.traderSel, choice))
+        if current_tradersel in new_locs:
+            self.traderSel.set(current_tradersel)
+        else:
+            self.traderSel.set(0)       
+
     def fillTraderWindow(self, event):
-        print("DEBUG - in fillTraderWindow")
-        print("DEBUG - EVENT", event)
         self.clearTraderWindow()
         selSubtype = self.subTypeListbox.get(ANCHOR)
         selSubtype = "" if selSubtype == "UNASSIGNED" else selSubtype
+
+        self.current_selSubtype = selSubtype
+        trader_subtype_choices = dao.getTraderLocsBySubtype(subtype=selSubtype)
+        self.refresh_tradersel(new_locs=trader_subtype_choices)
 
         itemsOfSubtype = dao.getSubtypeForTrader(selSubtype)
         itemsOfSubtypeOfSelectedMods = []

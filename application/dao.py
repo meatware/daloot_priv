@@ -208,6 +208,16 @@ def getTraderLocs():
     raw_results = cursor.fetchall()
     results = [row[0] if row[0] is not None else "" for row in raw_results]
     return sorted(results)
+
+def getTraderLocsBySubtype(subtype):
+    cursor = connection().cursor()
+    query = f"SELECT trader_loc FROM items WHERE subtype = '{subtype}' group by trader_loc"
+    print("DEBUG - query", query)
+    cursor.execute(query)
+    raw_results = cursor.fetchall()
+    print("DEBUG - raw_results", raw_results)
+    results = [row[0] if row[0] is not None else "" for row in raw_results]
+    return sorted(results)    
 #!##############################################
 
 def getSubtypesMods(mod):
