@@ -28,8 +28,8 @@ class TraderEditor(object):
         windows.center(self.window)
 
     def trader_loc_callback(self, *args):
-        print("DEBUG - excuting callback with self.fillTraderWindow")
-        print("DEBUG *args", *args)
+        #print("DEBUG - excuting callback with self.fillTraderWindow")
+        #print("DEBUG *args", *args)
         self.fillTraderWindow({"empty_event": "empty_event"})
 
     def createSubTypes(self):
@@ -52,16 +52,16 @@ class TraderEditor(object):
         #######################################
         traderLocFrame = Frame(self.main)
         traderLocFrame.grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        Label(traderLocFrame, text="Trader Location:").grid(row=0, column=0, sticky="w")     
+        Label(traderLocFrame, text="Trader Location:").grid(row=0, column=0, sticky="w")
         #
         self.traderSel = IntVar(traderLocFrame)
         self.traderSel.set(0)
         trader_choices = [0] #dao.getTraderLocs()
-        print("DEBUG trader_choices:", trader_choices, type(trader_choices))
+        #print("DEBUG trader_choices:", trader_choices, type(trader_choices))
         self.traderloc_menu = OptionMenu(traderLocFrame, self.traderSel, *trader_choices)
         self.traderloc_menu.grid(row=0, column=0, sticky="w", padx=100)
         self.traderSel.trace("w", self.trader_loc_callback)
-        #######################################            
+        #######################################
 
     def createTraderEditor(self, root, row, column, rows):
         self.drawEditor(root, row, column, self.setTraderCat(rows))
@@ -91,23 +91,23 @@ class TraderEditor(object):
         ### setup seconday filtering by trader_loc here
         ### rows are already setup
         trader_loc = self.traderSel.get()
-        print("DEBUG: self.traderSel get create", trader_loc)
+        #print("DEBUG: self.traderSel get create", trader_loc)
         if not rows:
             # rows is empty
-            print("DEBUG - empty row", rows)
+            #print("DEBUG - empty row", rows)
             quick_subtype = None
             trader_filtered_rows = rows
-        else: 
+        else:
             quick_subtype = rows[0][1]
             trader_filter_reflist = dao.getItemDetailsByTraderLoc(subtype=quick_subtype, trader_loc=trader_loc)
-            print("DEBUG: trader_filter_reflist ", trader_filter_reflist)
+            #print("DEBUG: trader_filter_reflist ", trader_filter_reflist)
             trader_filtered_rows = []
             for item in rows:
                 if item[0] in trader_filter_reflist:
                     trader_filtered_rows.append(item)
 
         for item in trader_filtered_rows:
-            print("DEBUG item", item)
+            #print("DEBUG item", item)
             self.traderRow(self.canvFrame, *item)
 
         scrl = Scrollbar(self.frame, orient=VERTICAL)
@@ -222,7 +222,7 @@ class TraderEditor(object):
         if current_tradersel in new_locs:
             self.traderSel.set(current_tradersel)
         else:
-            self.traderSel.set(0)       
+            self.traderSel.set(0)
 
     def fillTraderWindow(self, event):
         self.clearTraderWindow()

@@ -746,7 +746,7 @@ class Window(object):
 
     def getSelectedValues(self, element):
         dict = self.tree.item(element)
-        print("dict", dict)
+        #print("DEBUG dict", dict)
         flags = dao.getFlags(dict["text"])
 
         val = {
@@ -773,7 +773,7 @@ class Window(object):
     def getEditedValues(self, element):
         selected = self.getSelectedValues(element)
         selected.pop("rarity")
-        selected.pop("type")       
+        selected.pop("type")
 
         val = {
             "nominal": self.nominal_text.get(),
@@ -791,7 +791,7 @@ class Window(object):
             "map": self.map.get(),
             "player": self.player.get(),
         }
-      
+
         for field in self.activatedFields:
             selected[field] = val[field]
 
@@ -817,7 +817,7 @@ class Window(object):
         displayedNom = 0
         self.clearTree()
         for row in rows:
-            row = self.dictFromRow(row)           
+            row = self.dictFromRow(row)
             if row["mod"] in self.selectedMods:
                 displayedNom += row["nominal"]
                 self.tree.insert(
