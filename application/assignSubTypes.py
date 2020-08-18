@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import _setit
 
 import dao
 import windows
@@ -26,6 +27,11 @@ class TraderEditor(object):
 
         windows.center(self.window)
 
+    def trader_loc_callback(self, *args):
+        #print("DEBUG - excuting callback with self.fillTraderWindow")
+        #print("DEBUG *args", *args)
+        self.fillTraderWindow({"empty_event": "empty_event"})
+
     def createSubTypes(self):
         subtypesFrame = Frame(self.main)
         subtypesFrame.grid()
@@ -42,6 +48,20 @@ class TraderEditor(object):
                 subType = "UNASSIGNED"
 
             self.subTypeListbox.insert(END, subType)
+
+        #######################################
+        traderLocFrame = Frame(self.main)
+        traderLocFrame.grid(row=1, column=0, sticky="w", padx=10, pady=5)
+        Label(traderLocFrame, text="Trader Location:").grid(row=0, column=0, sticky="w")
+        #
+        self.traderSel = IntVar(traderLocFrame)
+        self.traderSel.set(0)
+        trader_choices = [0] #dao.getTraderLocs()
+        #print("DEBUG trader_choices:", trader_choices, type(trader_choices))
+        self.traderloc_menu = OptionMenu(traderLocFrame, self.traderSel, *trader_choices)
+        self.traderloc_menu.grid(row=0, column=0, sticky="w", padx=100)
+        self.traderSel.trace("w", self.trader_loc_callback)
+        #######################################
 
     def createTraderEditor(self, root, row, column, rows):
         self.drawEditor(root, row, column, self.setTraderCat(rows))
@@ -68,7 +88,26 @@ class TraderEditor(object):
         self.canvFrame = Frame(self.canv, height=height, width=width)
         self.canv.create_window(0, 0, window=self.canvFrame, anchor='nw')
 
-        for item in rows:
+        ### setup seconday filtering by trader_loc here
+        ### rows are already setup
+        trader_loc = self.traderSel.get()
+        #print("DEBUG: self.traderSel get create", trader_loc)
+        if not rows:
+            # rows is empty
+            #print("DEBUG - empty row", rows)
+            quick_subtype = None
+            trader_filtered_rows = rows
+        else:
+            quick_subtype = rows[0][1]
+            trader_filter_reflist = dao.getItemDetailsByTraderLoc(subtype=quick_subtype, trader_loc=trader_loc)
+            #print("DEBUG: trader_filter_reflist ", trader_filter_reflist)
+            trader_filtered_rows = []
+            for item in rows:
+                if item[0] in trader_filter_reflist:
+                    trader_filtered_rows.append(item)
+
+        for item in trader_filtered_rows:
+            #print("DEBUG item", item)
             self.traderRow(self.canvFrame, *item)
 
         scrl = Scrollbar(self.frame, orient=VERTICAL)
@@ -82,6 +121,7 @@ class TraderEditor(object):
         self.canvFrame.bind("<Configure>", self.update_scrollregion)
 
     def createTraderSetting(self, root, row, column):
+
         radioFrame = Frame(root)
         radioFrame.grid(row=row, column=column, sticky="w", pady=5)
 
@@ -171,10 +211,27 @@ class TraderEditor(object):
 
         self.traderVal = []
 
+    def refresh_tradersel(self, new_locs):
+        # Reset var and delete all old options
+        current_tradersel = self.traderSel.get()
+        self.traderloc_menu['menu'].delete(0, 'end')
+        # Insert list of new options (tk._setit hooks them up to var)
+        #new_locs = (1, 2 , 3)
+        for choice in new_locs:
+            self.traderloc_menu['menu'].add_command(label=choice, command=_setit(self.traderSel, choice))
+        if current_tradersel in new_locs:
+            self.traderSel.set(current_tradersel)
+        else:
+            self.traderSel.set(0)
+
     def fillTraderWindow(self, event):
         self.clearTraderWindow()
         selSubtype = self.subTypeListbox.get(ANCHOR)
         selSubtype = "" if selSubtype == "UNASSIGNED" else selSubtype
+
+        self.current_selSubtype = selSubtype
+        trader_subtype_choices = dao.getTraderLocsBySubtype(subtype=selSubtype)
+        self.refresh_tradersel(new_locs=trader_subtype_choices)
 
         itemsOfSubtype = dao.getSubtypeForTrader(selSubtype)
         itemsOfSubtypeOfSelectedMods = []
