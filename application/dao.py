@@ -258,7 +258,7 @@ def getSubtypeForTrader(subtype):
     return result
 
 def getItemDetailsByTraderLoc(subtype, trader_loc):
-    query = f'SELECT name FROM llama2.items where trader_loc = {trader_loc} and subtype = "{subtype}"'
+    query = f'SELECT name FROM items where trader_loc = {trader_loc} and subtype = "{subtype}"'
     cursor = connection().cursor()
     cursor.execute(query)
     results = cursor.fetchall()
