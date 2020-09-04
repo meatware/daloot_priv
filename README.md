@@ -15,23 +15,23 @@ Helps with Visualizing end editing Loot. Has some Automatic functions for Loot d
 Built upon a MySQL database that will be automatically generated and some manual editing of item links.
 written in python.
 
-## Install
-first off you need MYSQL x64 Server and ODBC Driver 8.0 x64  
-Download the installer [here](https://dev.mysql.com/downloads/windows/installer/8.0.html) the 20mb Version (no account needed scroll to the bottom of the page to download)  
-
-For minimal installation choose these settings:
-![Custom Installation](images/install1.jpg)
-
-Choose MYSQL Server x64 and Connector/ODBC 8.0 x64
-![MYSQL Server and ODBC 8.0](images/install2.jpg)
-
-Set a Password. I recommend `rootroot`. Does not need to be safe. It will be stored in plaintext!
-![Set Password](images/install3.jpg)
-
-Now download this app
 
 ### Developer install
-- pyodbc
+
+Activate virtualenv (optional) but this is how the cool kidz are playing
+
+```bash
+python -m virtualenv venv
+source venv/bin/activate
+```
+
+```bash
+pip install -r requirements.txt
+python application/frontend.py
+```
+
+For compiling an executeable the following is needed
+
 - pyinstaller
 
 ## First Startup
