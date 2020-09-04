@@ -16,17 +16,17 @@ class ConnectionWindow(object):
         self.server = "localhost"
         self.odbcV = "8.0"
 
-        try:
-            c = windows.readConfig()
-            self.user = c[0]
-            self.pwd = c[1]
-            self.prt = c[2]
-            self.dbName = c[3]
-            self.server = c[4]
-            self.odbcV = c[5]
+        # try:
+        #     c = windows.readConfig()
+        #     self.user = c[0]
+        #     self.pwd = c[1]
+        #     self.prt = c[2]
+        #     self.dbName = c[3]
+        #     self.server = c[4]
+        #     self.odbcV = c[5]
 
-        except FileNotFoundError:
-            pass
+        # except FileNotFoundError:
+        #     pass
 
         self.entryFrame = Frame(self.window)
         self.entryFrame.grid(row=1, column=0, sticky="n,w,e", padx=30)
