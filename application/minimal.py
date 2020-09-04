@@ -72,3 +72,10 @@ Button(text="Show data",command=show_table).grid(row=5, column=0)
 Button(text="Drop data",command=drop_rows).grid(row=6, column=0)
 
 main_menu.mainloop()
+
+# print(session.query(Item).all())
+
+# for class_instance in session.query(Item).all():
+#     print(vars(class_instance))
+
+# print([x[0] for x in session.query(Item.__table__.c["subtype"]).distinct().all()])

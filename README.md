@@ -30,6 +30,14 @@ pip install -r requirements.txt
 python application/frontend.py
 ```
 
+To insert rows from `init.sql` run
+
+
+```bash
+pytohn application/testdb.py
+```
+
+
 For compiling an executeable the following is needed
 
 - pyinstaller

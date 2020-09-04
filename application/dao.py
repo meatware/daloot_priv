@@ -368,7 +368,7 @@ def getNominalByUsage(usage):
 
 def getMinByType(type):
     con = connection()
-    cursor = con.cursor()
+    cursor = con.cursor()   
     cursor.execute(
         "select SUM(min) \
         from items \
