@@ -1,93 +1,30 @@
-from subprocess import Popen, PIPE
-
-import pyodbc
-
 import categories
 import distibutor
 import windows
 
-user = ""
-pwd = ""
-port = ""
-database = ""
-server = ""
-odbcV = ""
 
+from db import init_db, session, engine
+from model import Item
 
 def setConnectionParams(username, password, p, dbname, host, odbcVersion):
-    windows.writeConfig(username, password, p, dbname, host, odbcVersion)
-    global user
-    global pwd
-    global port
-    global database
-    global server
-    global odbcV
-
-    user = username
-    pwd = password
-    port = p
-    database = dbname
-    server = host
-    odbcV = odbcVersion
-
+    pass
 
 def connection():
-    global user
-    global pwd
-    global port
-    global database
-    global server
-    global odbcV
+    connection = engine.raw_connection()
+    return connection
 
-    if user == "":
-        c = windows.readConfig()
-        user = c[0]
-        pwd = c[1]
-        port = c[2]
-        database = c[3]
-        server = c[4]
-        odbcV = c[5]
+con = connection()
+c = con.cursor()
 
-    with pyodbc.connect(
-            r'DRIVER={MySQL ODBC '+odbcV+' Unicode Driver};'
-            r'UID=' + user + ';'
-            r'PWD=' + pwd + ';'
-            r'PORT=' + port + ';'
-            r'DATABASE=' + database + ';'
-            r'SERVER=' + server + ';'
-            r'OPTION=3;'
-    ) as connection:
-        # Setting Encoding
-        connection.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
-        connection.setencoding(encoding='utf-8')
-        return connection
-
+sql = "select mods from items group by mods"
+c.execute(
+    sql
+    )
+con.commit()
 
 def getCoulumNames():
-    global user
-    global pwd
-    global port
-    global database
-    global server
-    global odbcV
 
-    if user == "":
-        c = windows.readConfig()
-        user = c[0]
-        pwd = c[1]
-        port = c[2]
-        database = c[3]
-        server = c[4]
-        odbcV = c[5]
-
-    cursor = connection().cursor()
-    cursor.execute("SELECT COLUMN_NAME \
-                      FROM INFORMATION_SCHEMA.COLUMNS \
-                      WHERE TABLE_SCHEMA= '" + database + "' \
-                      AND TABLE_NAME= 'items' \
-                      ORDER BY ORDINAL_POSITION;")
-    return [row[0] for row in cursor.fetchall()]
-
+    return Item.__table__.columns.keys()
 
 columns = ""
 lastQuery = "select * from items"
@@ -96,7 +33,6 @@ lastQuery = "select * from items"
 def setColumnNames():
     global columns
     columns = ", ".join(getCoulumNames())
-
 
 def getDicts(items):
     itemsListOfDicts = []
@@ -143,7 +79,7 @@ def insertItem(parameters, item):
             item)
         conn.commit()
         return 0
-    except pyodbc.IntegrityError:
+    except:
         return 1
 
 
@@ -159,7 +95,7 @@ def createCombos(items):
 def deleteItem(itemName):
     conn = connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM items WHERE name = ?", itemName)
+    cursor.execute("DELETE FROM items WHERE name = ?", (itemName,))
     conn.commit()
 
 
@@ -176,8 +112,8 @@ def getItemsToZero(names, itemType):
                 from items \
                 where type = '" + itemType + "' \
                 and name in ({0})".format(', '.join('?' for _ in names))
-
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(lastQuery, names)
     return cursor.fetchall()
 
@@ -190,27 +126,30 @@ def getType(type, subtype=None):
         lastQuery += f" and subtype = '{subtype}'"
 
     lastQuery += f";"
-
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(lastQuery)
     return cursor.fetchall()
 
 
 def getSubtypes():
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute("SELECT subtype FROM items group by subtype")
     return [row[0] if row[0] is not None else "" for row in cursor.fetchall()]
 
 #!##############################################
 def getTraderLocs():
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute("SELECT trader_loc FROM items group by trader_loc")
     raw_results = cursor.fetchall()
     results = [row[0] if row[0] is not None else "" for row in raw_results]
     return sorted(results)
 
 def getTraderLocsBySubtype(subtype):
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     query = f"SELECT trader_loc FROM items WHERE subtype = '{subtype}' group by trader_loc"
     #print("DEBUG - query", query)
     cursor.execute(query)
@@ -221,7 +160,8 @@ def getTraderLocsBySubtype(subtype):
 #!##############################################
 
 def getSubtypesMods(mod):
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute("SELECT subtype, mods FROM items WHERE mods = ? group by subtype", mod)
     return [_[0] for _ in cursor.fetchall()]
 
@@ -235,7 +175,8 @@ def getCategory(category, subtype=None):
 
     lastQuery += f";"
 
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(lastQuery)
     return cursor.fetchall()
 
@@ -245,7 +186,8 @@ def getSubtypeForTrader(subtype):
                 from items \
                 where subtype = '" + subtype + "';"
 
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(query)
     result = cursor.fetchall()
     for i in range(len(result)):
@@ -259,7 +201,8 @@ def getSubtypeForTrader(subtype):
 
 def getItemDetailsByTraderLoc(subtype, trader_loc):
     query = f'SELECT name FROM items where trader_loc = {trader_loc} and subtype = "{subtype}"'
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(query)
     results = cursor.fetchall()
     return [row[0] for row in results]
@@ -301,7 +244,8 @@ def setTraderValues(items):
 
 def getLinkedItems(item):
     items = set()
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute("select * from itemcombos where item1 = ? or item2 = ?", item, item)
     fetched = cursor.fetchall()
     result = []
@@ -337,7 +281,8 @@ def getWeaponAndCorresponding(name):
                     ) as item2 on name = item2.item2 \
                     group by name;"
 
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(lastQuery)
     return cursor.fetchall()
 
@@ -352,7 +297,8 @@ def getWeaponsFromAccessoire(name):
                       ) as accessoire \
                       group by name;"
 
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(lastQuery)
     return cursor.fetchall()
 
@@ -363,7 +309,8 @@ def searchByName(name):
                 from items \
                 WHERE name LIKE '%" + name + "%';"
 
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(lastQuery)
     return cursor.fetchall()
 
@@ -375,7 +322,8 @@ def searchByNameAndType(name, type):
                 where type = '" + type + "' \
                 and name LIKE '%" + name + "%';"
 
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(lastQuery)
     return cursor.fetchall()
 
@@ -387,48 +335,52 @@ def searchByNameAndCat(name, cat):
                 where category = '" + cat + "' \
                 and name LIKE '%" + name + "%';"
 
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(lastQuery)
     return cursor.fetchall()
 
 
-def getNominalByType(type):
-    cursor = connection().cursor()
+def getNominalByType(t):
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(
         "select SUM(nominal) \
         from items \
-        where type = ?", type
+        where type = ?", (t,)
     )
     global columns
     if columns == "":
         setColumnNames()
-    return cursor.fetchval()
+    return cursor.fetchone()
 
 
 def getNominalByUsage(usage):
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(
         "select SUM(nominal) \
         from items \
         where ? = 1", usage.lower()
     )
-    return cursor.fetchval()
+    return cursor.fetchone()
 
 
 def getMinByType(type):
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(
         "select SUM(min) \
         from items \
         where type = ?", type
     )
-    return cursor.fetchval()
+    return cursor.fetchone()
 
 
 def updateType(itemName, type):
     conn = connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE items SET type = ? WHERE name = ?", type, itemName)
+    cursor.execute("UPDATE items SET type = ? WHERE name = ?", (type, itemName,))
     conn.commit()
 
 
@@ -449,7 +401,7 @@ def updateRarity(itemName, rarity):
 
     conn = connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE items SET rarity = ? WHERE name = ?", rarity, itemName)
+    cursor.execute("UPDATE items SET rarity = ? WHERE name = ?", (rarity, itemName,))
     conn.commit()
 
 
@@ -506,7 +458,8 @@ def updateMany(items):
 
 
 def getItemsToDistibute(type):
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute("select * from items where type = '" + type + "' and rarity <> 'undefined'")
     return cursor.fetchall()
 
@@ -518,13 +471,15 @@ def getAllItems(subtype=None):
     if subtype is not None:
         lastQuery += " WHERE subtype = '" + subtype + "'"
 
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(lastQuery)
     return cursor.fetchall()
 
 
 def getMods():
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute("select mods \
                     from items \
                     group by mods;")
@@ -550,99 +505,57 @@ def getItemsFromCatMods(category, mod, allItems, allMods, search=None):
     if search is not None:
         query += ") as filtered WHERE name LIKE \'%{}%\';".format(search)
 
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(query)
     rows = cursor.fetchall()
     return [row[0] for row in rows]
 
 
 def createDB(name):
-    global user
-    global pwd
-    global port
-    global database
-    global server
-    global odbcV
-
-    if user == "":
-        c = windows.readConfig()
-        user = c[0]
-        pwd = c[1]
-        port = c[2]
-        database = c[3]
-        server = c[4]
-        odbcV = c[5]
-
-    try:
-        pyodbc.connect(
-            r'DRIVER={MySQL ODBC 5.3 Unicode Driver};'
-            r'UID=' + user + ';'
-            r'PWD=' + pwd + ';'
-            r'PORT=' + port + ';'
-            r'SERVER=' + server + ';'
-            r'OPTION=3;'
-        )
-    except pyodbc.Error:
-        pyodbc.connect(
-            r'DRIVER={MySQL ODBC 8.0 Unicode Driver};'
-            r'UID=' + user + ';'
-            r'PWD=' + pwd + ';'
-            r'PORT=' + port + ';'
-            r'SERVER=' + server + ';'
-            r'OPTION=3;'
-        )
-        windows.writeConfig(user, pwd, port, database,server, "8.0")
-
-    with pyodbc.connect(
-            r'DRIVER={MySQL ODBC '+odbcV+' Unicode Driver};'
-            r'UID=' + user + ';'
-            r'PWD=' + pwd + ';'
-            r'PORT=' + port + ';'
-            r'SERVER=' + server + ';'
-            r'OPTION=3;'
-    ) as connection:
-        # Setting Encoding
-        connection.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
-        connection.setencoding(encoding='utf-8')
-
-        cursor = connection.cursor()
-        cursor.execute("CREATE DATABASE " + name + ";")
+    pass
 
 
 def getUsages(itemName):
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute("select " + ", ".join(categories.usages) + " from items where name = '" + itemName + "'")
     return cursor.fetchall()[0]
 
 
 def getTiers(itemName):
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute("select " + ", ".join(categories.tiers) + " from items where name = '" + itemName + "'")
     return cursor.fetchall()[0]
 
 
 def getRarity(itemName):
-    cursor = connection().cursor()
-    cursor.execute("select rarity from items where name = ?", itemName)
+    con = connection()
+    cursor = con.cursor()
+    cursor.execute("select rarity from items where name = ?", (itemName,))
     return cursor.fetchall()[0][0]
 
 
 def getSubtype(itemName):
-    cursor = connection().cursor()
-    cursor.execute("select subtype from items where name = ?", itemName)
-    return cursor.fetchval()
+    con = connection()
+    cursor = con.cursor()
+    cursor.execute("select subtype from items where name = ?", (itemName,))
+    return cursor.fetchone()
 
 
 def getFlags(itemName):
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute("select count_in_cargo, count_in_hoarder, count_in_map, count_in_player, crafted, deloot \
-                    from items where name = ?", itemName)
+                    from items where name = ?", (itemName,))
     return cursor.fetchall()[0]
 
 
 def getModFromItem(itemName):
-    cursor = connection().cursor()
-    cursor.execute("SELECT mods FROM items WHERE name = ?", itemName)
+    con = connection()
+    cursor = con.cursor()
+    cursor.execute("SELECT mods FROM items WHERE name = ?", (itemName,))
     return cursor.fetchall()
 
 
@@ -662,14 +575,16 @@ def updateListValues(newValues, name, listItems):
 
 
 def getPath():
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute("select @@basedir")
-    return cursor.fetchval()
+    return cursor.fetchone()
 
 
 def reExecuteLastQuery():
     global lastQuery
-    cursor = connection().cursor()
+    con = connection()
+    cursor = con.cursor()
     cursor.execute(lastQuery)
     return cursor.fetchall()
 
@@ -782,24 +697,5 @@ def loadDB(content):
     process.kill()
 
 def getOdbcVersion():
-    try:
-        pyodbc.connect(
-            r'DRIVER={MySQL ODBC 5.3 Unicode Driver};'
-            r'UID=' + user + ';'
-            r'PWD=' + pwd + ';'
-            r'PORT=' + port + ';'
-            r'SERVER=' + server + ';'
-            r'OPTION=3;'
-        )
-        return "5.3"
-    except pyodbc.Error:
-        pyodbc.connect(
-            r'DRIVER={MySQL ODBC 8.0 Unicode Driver};'
-            r'UID=' + user + ';'
-            r'PWD=' + pwd + ';'
-            r'PORT=' + port + ';'
-            r'SERVER=' + server + ';'
-            r'OPTION=3;'
-        )
-        windows.writeConfig(user, pwd, port, database,server, "8.0")
+    
         return "8.0"

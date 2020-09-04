@@ -10,11 +10,12 @@ from tkinter import messagebox
 import dao
 import xmlParser
 
-dataPath = abspath(join(getcwd(), "..", "data"))
+dataPath = abspath(join(getcwd(), "data"))
 
 
 def deleteParams():
-    remove(dataPath + "\\config.txt")
+    pass
+    # remove(dataPath + "\\config.txt")
 
 
 def openFile(fileEnding):

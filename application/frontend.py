@@ -48,7 +48,7 @@ class Window(object):
         self.window = window
         self.checkForDatabase()
         self.window.wm_title("Loot Editor v0.98.6")
-        self.window.wm_iconbitmap(dataPath + "\\miniLogo.ico")
+        # self.window.wm_iconbitmap(dataPath + "/miniLogo.ico")
         self.window.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.changed = False
@@ -445,7 +445,7 @@ class Window(object):
         )
 
         self.targetAmmo = StringVar()
-        self.targetAmmo.set(str(dao.getNominalByType("ammo")))
+        self.targetAmmo.set(str(dao.getNominalByType(str("ammo"))))
         self.targetAmmoEntry = Entry(
             self.distribution, textvariable=self.targetAmmo, width=5
         )
